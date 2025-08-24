@@ -27,9 +27,14 @@ MsgInfo {
     FileMsg getFileMsg();// 文件消息
 
     boolean isPrivateChat();// 私聊
-    boolean isGroupChat();// 群聊
-    boolean isOfficialAccount();// 公众号
     boolean isOpenIM();// 企业微信
+    
+    boolean isGroupChat();// 群聊
+    boolean isChatroom();// 普通群聊
+    boolean isImChatroom();// 企业群聊
+    
+    boolean isOfficialAccount();// 公众号
+    
     boolean isSend();// 自己发的
 
     boolean isText();// 文本
