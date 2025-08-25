@@ -125,3 +125,7 @@ features:
   - title: 自动增加步数@yixin
     details: 每次收发消息时自动增加微信步数
     link: https://github.com/HdShare/WAuxiliary_Plugin/tree/main/plugins/yixin/StepChange
+
+  - title: 定时发送助手@冰块
+    details: 支持设置文字/图片/视频/朋友圈图文的定时与循环发送，到点自动触发前台并可顺延执行
+    link: https://github.com/HdShare/WAuxiliary_Plugin/tree/main/plugins/冰块/定时发送助手/
