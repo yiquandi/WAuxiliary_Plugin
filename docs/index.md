@@ -68,7 +68,7 @@ features:
 
   - title: 语录@hd
     details: 命令[/q]引用他人消息, 即可生成语录图并发送
-    link: https://github.com/HdShare/WAuxiliary_Plugin/tree/main/plugins/hd/msg-q/
+    link: https://github.com/HdShare/WAuxiliary_Plugin/tree/main/plugins/hd/msg-q
 
   - title: 文生图@CkBcDD
     details: 命令[/作图 Corn Hub], 长按发送按钮生成并发送图片
@@ -128,4 +128,8 @@ features:
 
   - title: 定时发送助手@冰块
     details: 支持设置文字/图片/视频/朋友圈图文的定时与循环发送，到点自动触发前台并可顺延执行
-    link: https://github.com/HdShare/WAuxiliary_Plugin/tree/main/plugins/冰块/定时发送助手/
+    link: https://github.com/HdShare/WAuxiliary_Plugin/tree/main/plugins/冰块/定时发送助手
+
+  - title: 艾特关键词自动回复@冰块
+    details: 支持群聊私聊艾特和关键词自动回复，可配置文本/语音/图片/视频文件。长按发送（回复设置）触发
+    link: https://github.com/HdShare/WAuxiliary_Plugin/tree/main/plugins/冰块/艾特关键词自动回复
