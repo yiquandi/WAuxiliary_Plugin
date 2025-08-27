@@ -1,4 +1,6 @@
 
+import java.nio.file.Files;
+
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONPath;
@@ -9,16 +11,30 @@ void sendMusic(String talker, String title) {
     get("https://api.vkeys.cn/v2/music/netease?word=" + title + "&choose=1", null, new PluginCallBack.HttpCallback() {
         public void onSuccess(int respCode, String respContent) {
             JSONObject jsonObject = JSON.parseObject(respContent);
-            String id = JSONPath.eval(jsonObject, "$.data.id").toString();
             String name = JSONPath.eval(jsonObject, "$.data.song");
             String singer = JSONPath.eval(jsonObject, "$.data.singer");
-            String url = JSONPath.eval(jsonObject, "$.data.url");
+            String cover = JSONPath.eval(jsonObject, "$.data.cover");
             String link = JSONPath.eval(jsonObject, "$.data.link");
-            sendMusicCard(talker, name, singer, url, link, "wx8dd6ecd81906fd84");
+            String url = JSONPath.eval(jsonObject, "$.data.url");
+
+            byte[] thumbData;
+            download(cover, cacheDir + "/thumbImg.png", null, new PluginCallBack.DownloadCallback() {
+                public void onSuccess(File file) {
+                    thumbData = Files.readAllBytes(file.toPath());
+                    shareMusic(talker, name, singer, link, url, thumbData, "wx8dd6ecd81906fd84");
+                    file.delete();
+                }
+        
+                public void onError(Exception e) {
+                    thumbData = null;
+                    shareMusic(talker, name, singer, link, url, thumbData, "wx8dd6ecd81906fd84");
+                }
+            });
+
         }
 
         public void onError(Exception e) {
-            sendText(talker, "[落月API]请求异常:" + e.getMessage());
+            sendText(talker, "[落月API]点歌异常:" + e.getMessage());
         }
     });
 }
