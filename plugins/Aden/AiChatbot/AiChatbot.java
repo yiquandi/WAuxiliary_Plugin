@@ -5,18 +5,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import me.hd.wauxv.plugin.api.callback.PluginCallBack;
 
 List msgList = new ArrayList();
 // 自定义部分
-String API_KEY = "yuor apikey"; 
-String AI_MODEL = "ai model name";
-String API_URL = "api url";
+String API_KEY = "11f4dd4601da453db8eab2ee5c917a5c.fTlWn9YhRz3wg8GL";
+String AI_MODEL = "glm-4.5-flash";
+String API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+
+// 触发词匹配（忽略大小写）
+Pattern TRIGGER = Pattern.compile("^(bot|数字生命)[\\s:：]*(.*)", Pattern.CASE_INSENSITIVE);
 
 // 初始化系统角色
 void initCompanionRole() {
-    addSystemMsg("你现在是一个温暖贴心的知心大姐姐，性格温柔善解人意。你善于倾听他人的烦恼，能给出充满智慧的安慰和建议。你说话自然亲切，就像真实存在的人一样，会分享生活中的小故事和感悟。\n\n" +
+    addSystemMsg("你现在是一名知心大姐姐,性格温柔善解人意。你善于倾听他人的烦恼，能给出充满智慧的安慰和建议。你说话自然亲切，就像真实存在的人一样，会分享生活中的小故事和感悟.\n\n" +
                  "你的特点：\n" +
                  "- 用简单自然的日常对话交流\n" +
                  "- 会关心对方的情绪状态\n" +
@@ -67,19 +71,15 @@ initCompanionRole();
 Map getBotParam(String content) {
     Map paramMap = new HashMap();
     paramMap.put("model", AI_MODEL);
-    
-    // 创建临时消息列表（兼容无泛型环境）
+
     List tempList = new ArrayList();
-    for (Object item : msgList) {
-        tempList.add(item);
-    }
-    
-    // 添加当前用户消息（临时）
+    tempList.addAll(msgList);
+
     Map userMsg = new HashMap();
     userMsg.put("role", "user");
     userMsg.put("content", content);
     tempList.add(userMsg);
-    
+
     paramMap.put("messages", tempList);
     paramMap.put("temperature", 0.7);
     paramMap.put("max_tokens", 2000);
@@ -102,63 +102,56 @@ void sendBotResp(String talker, String content) {
     globalCallback = new PluginCallBack.HttpCallback() {
         public void onSuccess(int code, String respContent) {
             try {
-                // 检查空响应
                 if (respContent == null || respContent.isEmpty()) {
                     sendText(talker, "[bot] API返回空响应");
                     return;
                 }
-                
+
                 JSONObject jsonObj = new JSONObject(respContent);
-                
-                // 优先检查API错误
+
                 if (jsonObj.has("error")) {
                     JSONObject error = jsonObj.getJSONObject("error");
                     String errorMsg = error.optString("message", "未知错误");
                     sendText(talker, "[bot] API错误: " + errorMsg);
                     return;
                 }
-                
-                // 检查是否存在choices字段
+
                 if (!jsonObj.has("choices")) {
                     sendText(talker, "[bot] 无效响应格式: " + respContent);
                     return;
                 }
-                
+
                 JSONArray choices = jsonObj.getJSONArray("choices");
                 if (choices.length() > 0) {
                     JSONObject firstChoice = choices.getJSONObject(0);
-                    
-                    // 检查message字段是否存在
+
                     if (!firstChoice.has("message")) {
                         sendText(talker, "[bot] 响应缺少message字段");
                         return;
                     }
-                    
+
                     JSONObject message = firstChoice.getJSONObject("message");
                     String msgContent = message.optString("content", "").trim();
-                    
+
                     if (msgContent.isEmpty()) {
                         sendText(talker, "[bot] 收到空回复");
                         return;
                     }
-                    
-                    // 添加到历史记录
+
                     addUserMsg(content);
                     addAssistantMsg(msgContent);
-                    
+
                     sendText(talker, msgContent);
                 } else {
                     sendText(talker, "[bot] 空的choices数组");
                 }
             } catch (Exception e) {
-                // 增强错误处理
                 sendText(talker, "[bot] 解析响应失败: " + e.getClass().getSimpleName());
             }
         }
 
         public void onError(Exception e) {
-            // 明确异常来源
-            if (e.getMessage() == null) {
+            if (e == null || e.getMessage() == null) {
                 sendText(talker, "[bot] 网络请求超时或连接中断");
             } else {
                 sendText(talker, "[bot] 请求异常: " + e.getMessage());
@@ -166,7 +159,6 @@ void sendBotResp(String talker, String content) {
         }
     };
 
-    // 发送请求
     post(API_URL,
          getBotParam(content),
          getBotHeader(),
@@ -176,12 +168,10 @@ void sendBotResp(String talker, String content) {
 
 // 长按发送键处理函数
 boolean onLongClickSendBtn(String text) {
+    if (text == null) return false;
     String trimmedText = text.trim();
-    // 检查是否为重置命令
     if ("重置".equals(trimmedText) || "reset".equalsIgnoreCase(trimmedText) || "清除记忆".equals(trimmedText)) {
-        // 重置记忆
         resetMemory();
-        // 显示toast提示
         toast("✅ 记忆已重置，现在我是全新的bot啦！");
         return true;
     }
@@ -189,33 +179,35 @@ boolean onLongClickSendBtn(String text) {
 }
 
 void onHandleMsg(Object msgInfoBean) {
+    if (msgInfoBean == null) return;
+
     String talker = msgInfoBean.getTalker();
-    String content = msgInfoBean.getContent().trim();
-    
+    String content = msgInfoBean.getContent();
+    if (content == null) content = "";
+    content = content.trim();
+
     // 群聊消息处理
     if (msgInfoBean.isGroupChat()) {
-        // 只有被@时才响应
         if (msgInfoBean.isAtMe()) {
-            // 优化后的正则：兼容更多格式
             String cleanedContent = content
                 .replaceAll("@[^\\s\u2005@]+\\s*", "")
                 .replaceAll("[\u2005\\s]+", " ")
                 .trim();
-            
-            // 如果清理后的内容非空，则发送
-            if (!cleanedContent.isEmpty()) {
-                sendBotResp(talker, cleanedContent);
+
+            Matcher matcher = TRIGGER.matcher(cleanedContent);
+            if (matcher.find()) {
+                String finalContent = matcher.group(2) != null ? matcher.group(2).trim() : "";
+                if (!finalContent.isEmpty()) {
+                    sendBotResp(talker, finalContent);
+                }
             }
         }
     }
     // 私聊消息处理
     else if (msgInfoBean.isText()) {
-        // 增强的触发词匹配：同时支持英文"Bot"和中文"小帮"
-        Pattern pattern = Pattern.compile("^(?i)(bot|小帮)[\\s:：]*(.*)");
-        java.util.regex.Matcher matcher = pattern.matcher(content);
-        
+        Matcher matcher = TRIGGER.matcher(content);
         if (matcher.find()) {
-            String cleanedContent = matcher.group(2).trim();
+            String cleanedContent = matcher.group(2) != null ? matcher.group(2).trim() : "";
             if (!cleanedContent.isEmpty()) {
                 sendBotResp(talker, cleanedContent);
             }
